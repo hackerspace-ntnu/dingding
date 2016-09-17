@@ -23,17 +23,17 @@ class Slack_notify:
     def add_user(self,user,day,ts):
         if day<0 or day>4 or ts<0 or ts>3:
             return False
-        sql2=u"INSERT OR REPLACE INTO users (uname,day,time) VALUES('"+user+"',"+str(day)+","+str(ts)+");"
+        sql2=u"INSERT OR REPLACE INTO users (uname,day,time) VALUES(?,?,?);"
         with self.con:
             cur = self.con.cursor()
-            cur.execute(sql2)
+            cur.execute(sql2,(user,str(day),str(ts)))
         
         return True
 
     def remove_user(self,userid):
         with self.con:
             cur = self.con.cursor()
-            cur.execute("DELETE FROM users WHERE uname='"+userid+"';")
+            cur.execute("DELETE FROM users WHERE uname=?;",(userid))
             
     """
         Returnerer ei liste over alle brukerere som er registrert pÃ¥ tidspunket nÃ¥.
@@ -49,7 +49,7 @@ class Slack_notify:
         #res = self.users.find({"day":day,"ts":timeslot})
          with self.con:
              cur = self.con.cursor()
-             cur.execute("SELECT uname FROM users WHERE day="+str(day)+" AND time="+str(timeslot)+";")
+             cur.execute("SELECT uname FROM users WHERE day=? AND time=?;", (str(day), str(timeslot)) )
              rows = cur.fetchall()
              return [row[0] for row in rows]
 
@@ -69,18 +69,16 @@ class Slack_notify:
     def update_message_history_start(self,timestamp):
         with self.con:
              cur = self.con.cursor()
-             cur.execute("UPDATE time SET tid="+str(timestamp)+";")
+             cur.execute("UPDATE time SET tid=?;",(str(timestamp)))
 
         
     """
         For debugging. TÃ¸mmer databasen!
     """
     def clear_db(self):
-        users= self.get_all_users()
-        for p in users:
-            self.remove_user(p)
-        #for p in self.timestamp.find():
-        #    self.timestamp.remove(p)
+        with self.con:
+             cur = self.con.cursor()
+             cur.execute("DELETE FROM users")
         
         
     
