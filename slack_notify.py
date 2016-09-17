@@ -30,6 +30,23 @@ class Slack_notify:
         
         return True
 
+    def can_ding(userid):
+        with self.con:
+            cur = self.con.cursor()
+            cur.execute("SELECT ts FROM lastding WHERE uname=?",(userid,))
+            row =cur.fetchone()
+            if row is not None:
+                dtime = datetime.datetime.now()- row[0]
+                if dtime.seconds//60 >= 30:
+                    cur.execute("UPDATE lastding SET ts=? WHERE uname=?",(datetime.datetime.now(),userid))
+                return dtime.seconds//60 
+
+                
+            cur.execute("INSERT INTO lastding (uname,ts) VALUES(?,?);",(userid,datetime.datetime.now()))
+            return 1337
+
+
+
     def remove_user(self,userid):
         with self.con:
             cur = self.con.cursor()

@@ -137,6 +137,8 @@ class Slackman(threading.Thread):
        # print(response)
         self.post_message(response)
 
+
+
     def scan_messages(self,start_time=0,latest_time=None,send_push_nots=True):
 
         if start_time==0.0:
@@ -168,8 +170,12 @@ class Slackman(threading.Thread):
 
                     if len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
                         if "i" in data[1]:
-                            response = random.choice(["dong", "dang"])
-                            self.manding = True
+                            #response = random.choice(["dong", "dang"])
+                            dingtime = self.sn.can_ding(userid)
+                            if(dingtime>=30):
+                                self.manding = True
+                            else:
+                                self.post_message("<@"+userid+u">: " + "Du kan dinge om "+ str(dingtime)+ " minutter!")
                         else:
                             response = "ding"
                             self.post_message("<@"+userid+u">: " + response)
