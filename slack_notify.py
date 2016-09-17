@@ -9,7 +9,7 @@ class Slack_notify:
         #self.db= self.client.test
         #self.users= self.db.users
         #self.timestamp = self.db.timestamp
-        self.con=lite.connect('/home/pi/App/database/slackdb.db')
+        self.con=lite.connect('/home/pi/App/database/slackdb.db', detect_types=lite.PARSE_DECLTYPES)
     """
         Legger til bruker i databasen/oppdaterer tidspunk om bruker allerede er registrert.
         
@@ -30,13 +30,14 @@ class Slack_notify:
         
         return True
 
-    def can_ding(userid):
+    def can_ding(self,userid):
         with self.con:
             cur = self.con.cursor()
             cur.execute("SELECT ts FROM lastding WHERE uname=?",(userid,))
             row =cur.fetchone()
             if row is not None:
-                dtime = datetime.datetime.now()- row[0]
+                print(row[0])
+                dtime = datetime.datetime.now()- datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
                 if dtime.seconds//60 >= 30:
                     cur.execute("UPDATE lastding SET ts=? WHERE uname=?",(datetime.datetime.now(),userid))
                 return dtime.seconds//60 
