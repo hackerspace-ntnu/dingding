@@ -101,7 +101,7 @@ class Slackman(threading.Thread):
             message+=" <@"+vakt+">"
         self.post_message(message)
 
-    def is_manding():
+    def is_manding(self):
         if self.manding:
             self.manding=False
             return True
