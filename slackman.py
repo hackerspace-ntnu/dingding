@@ -24,6 +24,7 @@ class Slackman(threading.Thread):
     errorMsg = None
     alive =True
     last_message_check=0
+    manding = False
 
     sc = SlackClient(token)
 #    sn = Slack_notify()
@@ -100,6 +101,12 @@ class Slackman(threading.Thread):
             message+=" <@"+vakt+">"
         self.post_message(message)
 
+    def is_manding():
+        if self.manding:
+            self.manding=False
+            return True
+        return False
+
     def print_users(self):
         for day in range(5):
             for ts in range(4):
@@ -162,9 +169,10 @@ class Slackman(threading.Thread):
                     if len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
                         if "i" in data[1]:
                             response = random.choice(["dong", "dang"])
+                            self.manding = True
                         else:
                             response = "ding"
-                        self.post_message("<@"+userid+u">: " + response)
+                            self.post_message("<@"+userid+u">: " + response)
                         continue
                     
                     if(len(data)<3):

@@ -26,7 +26,7 @@ def playSound(soundPath):
 	pygame.mixer.music.load(soundPath)
 	pygame.mixer.music.play()
 
-def handlerButton(device):
+def handlerButton(device=None):
 	global slackman
 	#Notify the slackers
 	slackman.notify()
@@ -86,6 +86,8 @@ def main():
 	print("Waiting for BLE button...")
 	while True:
 		try:
+			if slackman.is_manding():
+				handlerButton()
 			if scanForBLEButton(scanner, 0.5):
 				lastSeen = datetime.now()
 				if NOTIFIED_LOST:
