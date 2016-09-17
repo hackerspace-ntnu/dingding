@@ -33,7 +33,7 @@ class Slack_notify:
     def remove_user(self,userid):
         with self.con:
             cur = self.con.cursor()
-            cur.execute("DELETE FROM users WHERE uname=?;",(userid))
+            cur.execute("DELETE FROM users WHERE uname=?;",(userid,))
             
     """
         Returnerer ei liste over alle brukerere som er registrert pÃ¥ tidspunket nÃ¥.
@@ -69,7 +69,7 @@ class Slack_notify:
     def update_message_history_start(self,timestamp):
         with self.con:
              cur = self.con.cursor()
-             cur.execute("UPDATE time SET tid=?;",(str(timestamp)))
+             cur.execute("UPDATE time SET tid=?;",(str(timestamp),))
 
         
     """
