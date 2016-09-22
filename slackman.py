@@ -52,19 +52,19 @@ class Slackman(threading.Thread):
                     self.warning_flag=False
                     tiden = datetime.datetime.now().hour
                     response=""
-                    if tiden>=7 and tiden <=22:
-                        response = "Noe er galt med ringeklokken. I need a doctor! <@U0BLQG7K5> <@U04JGAXFF>"
-                    else:
-                        response = "Noe er galt med ringeklokken. I need a doctor!"
-                    self.post_message(response)
+        #            if tiden>=7 and tiden <=22:
+       #                 response = "Noe er galt med ringeklokken. I need a doctor! <@U0BLQG7K5> <@U04JGAXFF>"
+      #              else:
+     #                   response = "Noe er galt med ringeklokken. I need a doctor!"
+    #                self.post_message(response)
 
-                if self.back_to_life_flag:
-                    self.back_to_life_flag = False
-                    self.post_message(u"Ringeklokken har gjenoppstått!")
-
-                if self.errorMsg:
-                   self.post_message("Noe gikk veldig galt:\n" + self.errorMsg)
-                   self.errorMsg = None
+   #             if self.back_to_life_flag:
+  #                  self.back_to_life_flag = False
+ #                   self.post_message(u"Ringeklokken har gjenoppstått!")
+#
+  #              if self.errorMsg:
+ #                  self.post_message("Noe gikk veldig galt:\n" + self.errorMsg)
+#                   self.errorMsg = None
 
                 if (time.time() - self.last_message_check) >10:
                     tid= self.scan_messages(self.sn.get_message_history_start())
@@ -180,7 +180,7 @@ class Slackman(threading.Thread):
                             if(dingtime>=30):
                                 self.manding = True
                             else:
-                                self.post_message("<@"+userid+u">: " + "Du kan dinge om "+ str(dingtime)+ " minutter!")
+                                self.post_message("<@"+userid+u">: " + "Du kan dinge om "+ str(30-dingtime)+ " minutter!")
                         else:
                             response = "ding"
                             self.post_message("<@"+userid+u">: " + response)
