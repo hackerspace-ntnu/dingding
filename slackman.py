@@ -18,6 +18,8 @@ class Slackman(threading.Thread):
     channel_key ="C0Z901HA5"
     weekdays={"mon":0,"tue":1,"wed":2,"thu":3,"fri":4, "man":0,"tir":1,"ons":2,"tor":3,"fre":4}
     weekdays2=("mandager","tirsdager","onsdager","torsdager","fredager")
+    greetings = ("sup", "skjer", "skjera", "wazzap", "whatsapp")
+    greetings_responses = ("ingenting, dingeling!", "ins, dd?")
     to_send=False
     warning_flag=False
     back_to_life_flag = False
@@ -166,6 +168,9 @@ class Slackman(threading.Thread):
 
                     if len(data)==2 and data[1]=="stopp":
                         self.stopp(userid)
+                        continue
+                    if len(data)>=2 and data[1] in self.greetings:
+                        self.post_message("<@"+userid+u">: " +random.choice(self.greetings_responses) )
                         continue
 
                     if len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
