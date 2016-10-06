@@ -38,7 +38,8 @@ class Slack_notify:
             if row is not None:
                 print(row[0])
                 dtime = datetime.datetime.now()- datetime.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
-                if dtime.seconds//60 >= 30:
+                
+                if dtime.days>0 or dtime.seconds//60 >= 30:
                     cur.execute("UPDATE lastding SET ts=? WHERE uname=?",(datetime.datetime.now(),userid))
                 return dtime.seconds//60 
 
