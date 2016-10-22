@@ -8,7 +8,6 @@ import time
 import datetime
 import threading
 import traceback
-import pymongo
 import random
 import os
 
@@ -73,9 +72,6 @@ class Slackman(threading.Thread):
                     self.sn.update_message_history_start(tid)
                     self.last_message_check=time.time()
                 time.sleep(1)
-            except pymongo.errors.PyMongoError:
-                self.post_message("Noe er galt med MongoDB: <@U0BLQG7K5> <@U04JGAXFF>\n" + traceback.format_exc())
-                self.alive = False
             except KeyboardInterrupt:
                 print("bye from slackman")
                 self.alive = False
