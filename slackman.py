@@ -165,20 +165,19 @@ class Slackman(threading.Thread):
                     data = text.lower().strip()
                     data=data.split(" ")
                     if len(data)<2 or data[0].replace(':','')!="<@u0zknlml0>":
-                        #print(data)
-                        continue
+                        continue #not @dingding
 
-                    if len(data)==2 and data[1]=="stopp":
+                    elif len(data)==2 and data[1]=="stopp":
                         self.stopp(userid)
-                        continue
-                    if len(data)>=2 and data[1] in self.greetings:
+                    
+                    elif len(data)>=2 and data[1] in self.greetings:
                         self.post_message("<@"+userid+u">: " +random.choice(self.greetings_responses) )
-                        continue
+                    
 
-                    if len(data)>=2 and data[1] in self.batteries:
+                    elif len(data)>=2 and data[1] in self.batteries:
                         self.post_message("<@"+userid+u">: " + "Jeg har " + str(self.batteryLevel) + "% batteri.")
 
-                    if len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
+                    elif len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
                         if "i" in data[1]:
                             #response = random.choice(["dong", "dang"])
                             dingtime = self.sn.can_ding(userid)
@@ -189,33 +188,25 @@ class Slackman(threading.Thread):
                         else:
                             response = "ding"
                             self.post_message("<@"+userid+u">: " + response)
-                        continue
                     
-                    if(len(data)<3):
+                    elif(len(data)<3):
                         if send_push_nots:
                             self.ugyldig_input(text,userid)
-                        continue
+                    else:
+                        try:
+                            weekday=self.weekdays[data[1][0:3]]
+                            timeslot = (int(data[2])-10)//2
+                            if timeslot<0 or timeslot>4:
+                                raise ValueError("Invalid time")
+                        except:
+                            if send_push_nots:
+                                self.ugyldig_input(text,userid)
+                            continue
 
-
-                    try:
-                        weekday=self.weekdays[data[1][0:3]]
-                        timeslot = (int(data[2])-10)//2
-                        if timeslot<0 or timeslot>4:
-                            raise ValueError("Invalid time")
-                    except:
+                        self.sn.add_user(userid,weekday,timeslot)
                         if send_push_nots:
-                            self.ugyldig_input(text,userid)
-                        continue
-
-                    self.sn.add_user(userid,weekday,timeslot)
-                    if send_push_nots:
-                        response="<@"+userid+u">: Du får varslinger på " +self.weekdays2[weekday] +" " + str(timeslot*2+10) +"-"+str(timeslot*2+12)+"!"
-                        self.post_message(response)
-            #else:
-            #    return time.time(
-            #if ret["has_more"]:
-                #return self.scan_messages(start_time,latest_time=latest_time)
-        
+                            response="<@"+userid+u">: Du får varslinger på " +self.weekdays2[weekday] +" " + str(timeslot*2+10) +"-"+str(timeslot*2+12)+"!"
+                            self.post_message(response)
 
         return time.time()
         #return max(last_msg_time,start_time)
