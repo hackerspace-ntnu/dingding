@@ -52,8 +52,9 @@ def handlerBattery(device):
 	buttonService = button.getServiceByUUID(BATTERY_SERVICE_UUID)
 	for characteristic in buttonService.getCharacteristics():
 		if characteristic.supportsRead(): #then fuckin read it!
-			slackman.batteryLevel = int(characteristic.read().encode('hex'), 16)
-			print("Battery: ", slackman.batteryLevel)
+			batteryLevel = int(characteristic.read().encode('hex'), 16)
+			print("Battery: ", batteryLevel)
+			slackman.batteryLevel = batteryLevel
 	button.disconnect()
 
 def scanForBLEButton(scanner, timeout):
