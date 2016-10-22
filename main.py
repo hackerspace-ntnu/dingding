@@ -40,7 +40,7 @@ def handlerButton(device=None):
 			button = btle.Peripheral(device.addr, device.addrType, device.iface)
 			button.disconnect()
 			break
-		except BTLEException:
+		except btle.BTLEException:
 			pass
 	
 	#Avoid repeated sounds by waiting
@@ -59,7 +59,7 @@ def handlerBattery(device):
 					slackman.batteryLevel = batteryLevel
 			button.disconnect()
 			break
-		except BTLEException:
+		except btle.BTLEException:
 			pass
 
 def scanForBLEButton(scanner, timeout):
