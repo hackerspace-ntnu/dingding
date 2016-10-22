@@ -119,8 +119,8 @@ class Slackman(threading.Thread):
                         continue
                     print(res["real_name"]+"  ("+res["name"]+", "+usr+")")
 
-    def post_message(self,message):
-        self.sc.api_call("chat.postMessage", channel="#ding-dong", text=message,username='Dingding', icon_emoji=':pekkaross:')
+    def post_message(self,message, emoji=":pekkaross:"):
+        self.sc.api_call("chat.postMessage", channel="#ding-dong", text=message,username='Dingding', icon_emoji=emoji)
 
     def ugyldig_input(self,message,userid):
 
@@ -171,7 +171,7 @@ class Slackman(threading.Thread):
                     
 
                     elif len(data)>=2 and data[1] in self.batteries:
-                        self.post_message("<@"+userid+u">: " + "Jeg har " + str(self.batteryLevel) + "% batteri.")
+                        self.post_message("<@"+userid+u">: " + "Jeg har " + str(self.batteryLevel) + "% batteri.", ":battery:")
 
                     elif len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
                         if "i" in data[1]:
