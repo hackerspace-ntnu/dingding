@@ -34,28 +34,33 @@ def handlerButton(device=None):
 	soundPath = getSoundPath(SOUNDS_DIRECTORY)
 	playSound(soundPath)
 	
-	#we can get some data that we dont need:
-	button = btle.Peripheral(device.addr, device.addrType, device.iface)
-	buttonService = button.getServiceByUUID(BUTTON_SERVICE_UUID)
-	for characteristic in buttonService.getCharacteristics():
-		if characteristic.supportsRead(): #then fuckin read it!
-			buttonPressed = bool(int(characteristic.read().encode('hex'), 16))
-			print("Pressed: ", buttonPressed)
-	button.disconnect()
+	#connect and disconnect to ACK:
+	for i in range(0, 10):
+		try:
+			button = btle.Peripheral(device.addr, device.addrType, device.iface)
+			button.disconnect()
+			break
+		except BTLEException:
+			pass
 	
 	#Avoid repeated sounds by waiting
 	#No longer needed with new ding-code
 	#time.sleep(4.5)
 			
 def handlerBattery(device):
-	button = btle.Peripheral(device.addr, device.addrType, device.iface)
-	buttonService = button.getServiceByUUID(BATTERY_SERVICE_UUID)
-	for characteristic in buttonService.getCharacteristics():
-		if characteristic.supportsRead(): #then fuckin read it!
-			batteryLevel = int(characteristic.read().encode('hex'), 16)
-			print("Battery: ", batteryLevel)
-			slackman.batteryLevel = batteryLevel
-	button.disconnect()
+	for i in range(0, 10):
+		try:
+			button = btle.Peripheral(device.addr, device.addrType, device.iface)
+			buttonService = button.getServiceByUUID(BATTERY_SERVICE_UUID)
+			for characteristic in buttonService.getCharacteristics():
+				if characteristic.supportsRead(): #then fuckin read it!
+					batteryLevel = int(characteristic.read().encode('hex'), 16)
+					print("Battery: ", batteryLevel)
+					slackman.batteryLevel = batteryLevel
+			button.disconnect()
+			break
+		except BTLEException:
+			pass
 
 def scanForBLEButton(scanner, timeout):
 	foundButton = False
