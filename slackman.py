@@ -20,6 +20,7 @@ class Slackman(threading.Thread):
     weekdays2=("mandager","tirsdager","onsdager","torsdager","fredager")
     greetings = ("sup", "skjer", "skjera", "wazzap", "whatsapp", "sup?", "skjer?", "skjera?", "wazzap?", "whatsapp?")
     greetings_responses = ("ingenting, dingeling!", "ins, dd?")
+    batteries = ("batteri", "strøm", "powah", "har du strøm", "got the powah", ":battery:", ":electric_plug:")
     to_send=False
     warning_flag=False
     back_to_life_flag = False
@@ -27,6 +28,7 @@ class Slackman(threading.Thread):
     alive =True
     last_message_check=0
     manding = False
+    batteryLevel = -1
 
     sc = SlackClient(token)
 #    sn = Slack_notify()
@@ -172,6 +174,9 @@ class Slackman(threading.Thread):
                     if len(data)>=2 and data[1] in self.greetings:
                         self.post_message("<@"+userid+u">: " +random.choice(self.greetings_responses) )
                         continue
+
+                    if len(data)>=2 and data[1] in self.batteries:
+                        self.post_message("<@"+userid+u">: " + "Jeg har " + str(self.batteryLevel) + "% batteri.")
 
                     if len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
                         if "i" in data[1]:
