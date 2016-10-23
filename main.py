@@ -67,8 +67,8 @@ def handlerBattery(device):
 def scanForBLEButton(scanner, timeout):
 	foundButton = False
 	scanHandlers = {BUTTON_MAC: handlerButton,
-				BATTERY_MAC: handlerBattery
-				RELAY_BUTTON_MAC: handlerButton
+				BATTERY_MAC: handlerBattery,
+				RELAY_BUTTON_MAC: handlerButton,
 				RELAY_BATTERY_MAC: handlerBattery}
 	devicesFound = scanner.scan(timeout)
 	for device in devicesFound:
