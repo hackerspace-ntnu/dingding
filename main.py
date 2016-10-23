@@ -5,6 +5,8 @@ from slackman import Slackman
 
 BUTTON_MAC = "0e:aa:aa:aa:aa:aa"
 BATTERY_MAC = "0e:bb:bb:bb:bb:bb"
+RELAY_BUTTON_MAC = "0f:aa:aa:aa:aa:aa"
+RELAY_BATTERY_MAC = "0f:bb:bb:bb:bb:bb"
 BUTTON_SERVICE_UUID = "0000a000-0000-1000-8000-00805f9b34fb"
 BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
 SOUNDS_DIRECTORY = "/home/pi/App/sounds/"
@@ -65,7 +67,9 @@ def handlerBattery(device):
 def scanForBLEButton(scanner, timeout):
 	foundButton = False
 	scanHandlers = {BUTTON_MAC: handlerButton,
-				BATTERY_MAC: handlerBattery}
+				BATTERY_MAC: handlerBattery
+				RELAY_BUTTON_MAC: handlerButton
+				RELAY_BATTERY_MAC: handlerBattery}
 	devicesFound = scanner.scan(timeout)
 	for device in devicesFound:
 		if device.addr in scanHandlers and device.connectable:
