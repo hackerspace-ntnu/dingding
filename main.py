@@ -2,11 +2,9 @@ import bluepy.bluepy.btle as btle
 import pygame, os, random, traceback, time
 from datetime import datetime
 from slackman import Slackman
+import RPi.GPIO as GPIO
 
-BUTTON_MAC = "0e:aa:aa:aa:aa:aa"
-BATTERY_MAC = "0e:bb:bb:bb:bb:bb"
-RELAY_BUTTON_MAC = "0f:aa:aa:aa:aa:aa"
-RELAY_BATTERY_MAC = "0f:bb:bb:bb:bb:bb"
+BUTTON_MACS = ["0e:aa:aa:aa:aa:aa", "0f:aa:aa:aa:aa:aa"]
 BUTTON_SERVICE_UUID = "0000a000-0000-1000-8000-00805f9b34fb"
 BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
 SOUNDS_DIRECTORY = "/home/pi/App/sounds/"
@@ -28,7 +26,7 @@ def playSound(soundPath):
 	pygame.mixer.music.load(soundPath)
 	pygame.mixer.music.play()
 
-def handlerButton(device=None):
+def handlerButton(scanEntry = None):
 	global slackman
 	#Notify the slackers
 	slackman.notify()
@@ -36,45 +34,23 @@ def handlerButton(device=None):
 	soundPath = getSoundPath(SOUNDS_DIRECTORY)
 	playSound(soundPath)
 	
-	#connect and disconnect to ACK:
-	for i in range(0, 10):
-		try:
-			button = btle.Peripheral(device.addr, device.addrType, device.iface)
-			button.disconnect()
-			break
-		except btle.BTLEException:
-			pass
-	
 	#Avoid repeated sounds by waiting
-	#No longer needed with new ding-code
-	#time.sleep(4.5)
+	time.sleep(5.0)
 			
-def handlerBattery(device):
-	for i in range(0, 10):
-		try:
-			button = btle.Peripheral(device.addr, device.addrType, device.iface)
-			buttonService = button.getServiceByUUID(BATTERY_SERVICE_UUID)
-			for characteristic in buttonService.getCharacteristics():
-				if characteristic.supportsRead(): #then fuckin read it!
-					batteryLevel = int(characteristic.read().encode('hex'), 16)
-					print("Battery: ", batteryLevel)
-					slackman.batteryLevel = batteryLevel
-			button.disconnect()
-			break
-		except btle.BTLEException:
-			pass
+def handlerBattery(scanEntry = None):
+	batteryLevel = -2 #TODO
+	print("Battery: ", batteryLevel)
+	slackman.batteryLevel = batteryLevel
 
 def scanForBLEButton(scanner, timeout):
 	foundButton = False
-	scanHandlers = {BUTTON_MAC: handlerButton,
-				BATTERY_MAC: handlerBattery,
-				RELAY_BUTTON_MAC: handlerButton,
-				RELAY_BATTERY_MAC: handlerBattery}
-	devicesFound = scanner.scan(timeout)
-	for device in devicesFound:
-		if device.addr in scanHandlers and device.connectable:
-			print(device.addr, device.connectable, device.rssi)
-			scanHandlers[device.addr](device) #Run handler
+	scanEntries = scanner.scan(timeout)
+	for scanEntry in scanEntries:
+		if scanEntry.addr in BUTTON_MACS:
+			print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
+			for (adtype, desc, value) in scanEntry.getScanData():
+				print("  %s = %s" % (desc, value))
+			#scanHandlers[scanEntry.addr](scanEntry) #Run handler
 			foundButton = True
 	return foundButton
 					
@@ -99,11 +75,20 @@ def main():
 	lastSeen = datetime.now()
 	slackman = Slackman()
 	slackman.start()
+	print("Setting up GPIO...")
+	GPIO.setmode(GPIO.BOARD)
+	inputPins = [36, 38, 40]
+	for pin in inputPins:
+		GPIO.setup(pin, GPIO.IN, GPIO.PUD_UP)
+		GPIO.add_event_detect(pin, GPIO.FALLING)
 	print("Waiting for BLE button...")
 	while True:
 		try:
-			if slackman.is_manding():
+			if slackman.is_manding() or :
 				handlerButton()
+			for pin in inputPins:
+				if GPIO.event_detected(pin):
+					handlerButton()
 			if scanForBLEButton(scanner, 0.5):
 				lastSeen = datetime.now()
 				if NOTIFIED_LOST:
@@ -119,6 +104,7 @@ def main():
 			
 		except KeyboardInterrupt:
 			print("Bye!")
+			GPIO.cleanup()
 			break
 	slackman.alive = False
 	pygame.mixer.quit()
