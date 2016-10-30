@@ -84,7 +84,7 @@ def main():
 	print("Waiting for BLE button...")
 	while True:
 		try:
-			if slackman.is_manding() or :
+			if slackman.is_manding():
 				handlerButton()
 			for pin in inputPins:
 				if GPIO.event_detected(pin):
