@@ -26,7 +26,7 @@ def playSound(soundPath):
 	pygame.mixer.music.load(soundPath)
 	pygame.mixer.music.play()
 
-def handlerButton(scanEntry = None):
+def handlerButton():
 	global slackman
 	#Notify the slackers
 	slackman.notify()
@@ -37,8 +37,7 @@ def handlerButton(scanEntry = None):
 	#Avoid repeated sounds by waiting
 	time.sleep(5.0)
 			
-def handlerBattery(scanEntry = None):
-	batteryLevel = -2 #TODO
+def handlerBattery(batteryLevel = -1):
 	print("Battery: ", batteryLevel)
 	slackman.batteryLevel = batteryLevel
 
@@ -50,6 +49,12 @@ def scanForBLEButton(scanner, timeout):
 			print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
 			for (adtype, desc, value) in scanEntry.getScanData():
 				print("%s %s = %s" % (adtype, desc, value))
+				if int(adtype) == 22: #Service data
+					pressed = bool(int(value[0:2], 16))
+					if pressed:
+						handlerButton()
+					battery = int(value[2:4], 16)
+					handlerBattery(battery)
 			#scanHandlers[scanEntry.addr](scanEntry) #Run handler
 			foundButton = True
 	return foundButton
