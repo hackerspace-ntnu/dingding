@@ -49,7 +49,7 @@ def scanForBLEButton(scanner, timeout):
 		if scanEntry.addr in BUTTON_MACS:
 			print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
 			for (adtype, desc, value) in scanEntry.getScanData():
-				print("  %s = %s" % (desc, value))
+				print("%s %s = %s" % (adtype, desc, value))
 			#scanHandlers[scanEntry.addr](scanEntry) #Run handler
 			foundButton = True
 	return foundButton
