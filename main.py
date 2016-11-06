@@ -4,10 +4,6 @@ from datetime import datetime
 from slackman import Slackman
 import RPi.GPIO as GPIO
 
-BUTTON_MACS = ["ff:0b:3a:74:46:b2"]
-#BUTTON_MACS = ["0f:aa:aa:aa:aa:aa", "c3:f5:0c:c8:ea:6d"]
-BUTTON_SERVICE_UUID = "0000a000-0000-1000-8000-00805f9b34fb"
-BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
 SOUNDS_DIRECTORY = "/home/pi/App/sounds/"
 LAST_SEEN_MAX = 31 * 60 #1 extra minute just to be sure
 NOTIFIED_LOST = False
@@ -40,26 +36,29 @@ def handlerButton():
 	#Avoid repeated sounds by waiting
 	time.sleep(5.0)
 			
-def handlerBattery(batteryLevel = -1):
-	print("Battery: ", batteryLevel)
-	slackman.batteryLevel = batteryLevel
+def handlerBattery(batteryLevel = -1, deviceID = "Ukjent dinger"):
+	print("Battery for %s: " % deviceID, batteryLevel)
+	slackman.batteryLevels[deviceID] = batteryLevel
 
 def scanForBLEButton(scanner, timeout):
 	foundButton = False
 	scanEntries = scanner.scan(timeout)
 	for scanEntry in scanEntries:
-		if scanEntry.addr in BUTTON_MACS:
-			print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
-			for (adtype, desc, value) in scanEntry.getScanData():
-				print("%s %s = %s" % (adtype, desc, value))
-				if int(adtype) == 22: #Service data
-					data = int(value[0:2], 16)
-					if data >= 128:
-						handlerButton()
-					battery = data & ~(1 << 7)
-					handlerBattery(battery)
-			#scanHandlers[scanEntry.addr](scanEntry) #Run handler
-			foundButton = True
+		entryIsButton = False
+		for (adtype, desc, value) in scanEntry.getScanData():
+			if int(adtype) == 9 and "HS_" in value: #Complete local name
+				print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
+				entryIsButton = True
+				foundButton = True
+		for (adtype, desc, value) in scanEntry.getScanData():
+			print("%s %s = %s" % (adtype, desc, value))
+			if entryIsButton and int(adtype) == 22: #Service data
+				data = int(value[0:2], 16)
+				if data >= 128:
+					handlerButton()
+				battery = data & ~(1 << 7)
+				deviceID = value[2:8]
+				handlerBattery(battery, deviceID)
 	return foundButton
 					
 def checkLastSeen(lastSeen, maxSecondsDiff):
