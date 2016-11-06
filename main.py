@@ -1,10 +1,11 @@
 import bluepy.bluepy.btle as btle
-import pygame, os, random, traceback, time
+import pygame, os, random, traceback, time, sys
 from datetime import datetime
 from slackman import Slackman
 import RPi.GPIO as GPIO
 
-BUTTON_MACS = ["0e:aa:aa:aa:aa:aa", "0f:aa:aa:aa:aa:aa"]
+BUTTON_MACS = ["ff:0b:3a:74:46:b2"]
+#BUTTON_MACS = ["0f:aa:aa:aa:aa:aa", "c3:f5:0c:c8:ea:6d"]
 BUTTON_SERVICE_UUID = "0000a000-0000-1000-8000-00805f9b34fb"
 BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb"
 SOUNDS_DIRECTORY = "/home/pi/App/sounds/"
@@ -12,6 +13,7 @@ LAST_SEEN_MAX = 31 * 60 #1 extra minute just to be sure
 NOTIFIED_LOST = False
 slackman = None #Can throw exceptions so we'll set it up later
 playing = False
+notifySlack = True
 
 def getSoundPath(basePath):
 	files = [f for f in os.listdir(basePath) if os.path.isfile(os.path.join(basePath, f))]
@@ -29,7 +31,8 @@ def playSound(soundPath):
 def handlerButton():
 	global slackman
 	#Notify the slackers
-	slackman.notify()
+	if notifySlack:
+		slackman.notify()
 	#dont stop the music
 	soundPath = getSoundPath(SOUNDS_DIRECTORY)
 	playSound(soundPath)
@@ -50,10 +53,10 @@ def scanForBLEButton(scanner, timeout):
 			for (adtype, desc, value) in scanEntry.getScanData():
 				print("%s %s = %s" % (adtype, desc, value))
 				if int(adtype) == 22: #Service data
-					pressed = bool(int(value[0:2], 16))
-					if pressed:
+					data = int(value[0:2], 16)
+					if data >= 128:
 						handlerButton()
-					battery = int(value[2:4], 16)
+					battery = data & ~(1 << 7)
 					handlerBattery(battery)
 			#scanHandlers[scanEntry.addr](scanEntry) #Run handler
 			foundButton = True
@@ -75,7 +78,12 @@ def main():
 	global slackman
 	global playing
 	global NOTIFIED_LOST
+	global notifySlack
 	print("Welcome to ding dang!")
+	print(sys.argv, len(sys.argv))
+	if len(sys.argv) > 1 and sys.argv[1] == "noslack":
+		print("no slack plz")
+		notifySlack = False
 	scanner = btle.Scanner()
 	lastSeen = datetime.now()
 	slackman = Slackman()
