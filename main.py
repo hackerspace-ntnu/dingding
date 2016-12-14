@@ -22,7 +22,7 @@ def playSound(soundPath):
 	global playing
 	playing = True
 	pygame.mixer.init() #for playing audio later
-	print("Playing sound: " + soundPath)
+	logging.info("Playing sound: " + soundPath)
 	pygame.mixer.music.load(soundPath)
 	pygame.mixer.music.play()
 
@@ -39,7 +39,7 @@ def handlerButton():
 	time.sleep(5.0)
 			
 def handlerBattery(batteryLevel = -1, deviceID = "Ukjent dinger"):
-	print("Battery for %s: " % deviceID, batteryLevel)
+	logging.info("Battery for %s: " % deviceID, batteryLevel)
 	slackman.batteryLevels[deviceID] = batteryLevel
 
 def scanForBLEButton(scanner, timeout):
@@ -49,11 +49,11 @@ def scanForBLEButton(scanner, timeout):
 		entryIsButton = False
 		for (adtype, desc, value) in scanEntry.getScanData():
 			if int(adtype) == 9 and "HS_" in value: #Complete local name
-				print(scanEntry.addr, scanEntry.connectable, scanEntry.rssi)
+				logging.info(str(scanEntry.addr), str(scanEntry.connectable), str(scanEntry.rssi))
 				entryIsButton = True
 				foundButton = True
 		for (adtype, desc, value) in scanEntry.getScanData():
-			print("%s %s = %s" % (adtype, desc, value))
+			logging.debug("%s %s = %s" % (adtype, desc, value))
 			if entryIsButton and int(adtype) == 22: #Service data
 				data = int(value[0:2], 16)
 				if data >= 128:
@@ -80,7 +80,7 @@ def main():
 	global playing
 	global NOTIFIED_LOST
 	global notifySlack
-	logging.basicConfig(filename=LOG_DIRECTORY + '/dingers.log',level=logging.DEBUG)
+	logging.basicConfig(filename=LOG_DIRECTORY + '/dingers.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 	logging.info("Welcome to ding dang!")
 	logging.info(sys.argv, len(sys.argv))

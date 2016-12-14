@@ -34,7 +34,7 @@ class Slackman(threading.Thread):
     
 
     def __init__(self):
-        logging.info("Token: ",self.token)
+        logging.info("Token: ", str(self.token))
         threading.Thread.__init__(self)
 
     def run(self):
@@ -97,7 +97,7 @@ class Slackman(threading.Thread):
         vakter=self.sn.get_users_to_notify()
         message=u"Noen har ringt på hos Hackerspace!"
         for vakt in vakter:
-            logging.info(vakt)
+            logging.info(str(vakt))
             message+=" <@"+vakt+">"
         self.post_message(message)
 
@@ -153,7 +153,7 @@ class Slackman(threading.Thread):
         last_msg_time=0
         if ret is not None and "messages" in ret:
             for a in reversed(ret["messages"]):
-                logging.info(a)
+                logging.info(str(a))
                 last_msg_time=float(a["ts"])
                 if "user" in a:
                     userid= a["user"]
