@@ -81,6 +81,7 @@ def main():
 	global NOTIFIED_LOST
 	global notifySlack
 	logging.basicConfig(filename=LOG_DIRECTORY + '/dingers.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
+	logging.getLogger().addHandler(logging.StreamHandler())
 
 	logging.info("Welcome to ding dang!")
 	logging.info(" ".join(sys.argv) + " " + str(len(sys.argv)))
