@@ -83,7 +83,7 @@ def main():
 	logging.basicConfig(filename=LOG_DIRECTORY + '/dingers.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 	logging.info("Welcome to ding dang!")
-	logging.info(sys.argv, len(sys.argv))
+	logging.info(" ".join(sys.argv) + " " + str(len(sys.argv)))
 	if len(sys.argv) > 1 and sys.argv[1] == "noslack":
 		logging.info("no slack plz")
 		notifySlack = False
