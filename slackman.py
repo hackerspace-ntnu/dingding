@@ -34,7 +34,7 @@ class Slackman(threading.Thread):
     
 
     def __init__(self):
-        logging.info("Token: ", str(self.token))
+        logging.info("Token: %s" % (self.token))
         threading.Thread.__init__(self)
 
     def run(self):
