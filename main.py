@@ -3,8 +3,10 @@ import pygame, os, random, traceback, time, sys
 from datetime import datetime
 from slackman import Slackman
 import RPi.GPIO as GPIO
+import logging
 
 SOUNDS_DIRECTORY = "/home/pi/App/sounds/"
+LOG_DIRECTORY = "/home/pi/App/logs/"
 LAST_SEEN_MAX = 31 * 60 #1 extra minute just to be sure
 NOTIFIED_LOST = False
 slackman = None #Can throw exceptions so we'll set it up later
@@ -67,7 +69,7 @@ def checkLastSeen(lastSeen, maxSecondsDiff):
 	diff = datetime.now() - lastSeen
 	if diff.seconds > maxSecondsDiff:
 		if not NOTIFIED_LOST:
-			print("Not seen for " + str(maxSecondsDiff / 60) + " minutes :(")
+			logging.warning("Not seen for " + str(maxSecondsDiff / 60) + " minutes :(")
 			slackman.warning()
 			NOTIFIED_LOST = True
 		return False
@@ -78,22 +80,24 @@ def main():
 	global playing
 	global NOTIFIED_LOST
 	global notifySlack
-	print("Welcome to ding dang!")
-	print(sys.argv, len(sys.argv))
+	logging.basicConfig(filename=LOG_DIRECTORY + '/dingers.log',level=logging.DEBUG)
+
+	logging.info("Welcome to ding dang!")
+	logging.info(sys.argv, len(sys.argv))
 	if len(sys.argv) > 1 and sys.argv[1] == "noslack":
-		print("no slack plz")
+		logging.info("no slack plz")
 		notifySlack = False
 	scanner = btle.Scanner()
 	lastSeen = datetime.now()
 	slackman = Slackman()
 	slackman.start()
-	print("Setting up GPIO...")
+	logging.info("Setting up GPIO...")
 	GPIO.setmode(GPIO.BOARD)
 	inputPins = [36, 38, 40]
 	for pin in inputPins:
 		GPIO.setup(pin, GPIO.IN, GPIO.PUD_UP)
 		GPIO.add_event_detect(pin, GPIO.FALLING)
-	print("Waiting for BLE button...")
+	logging.info("Waiting for BLE button...")
 	while True:
 		try:
 			if slackman.is_manding():
@@ -105,7 +109,7 @@ def main():
 				lastSeen = datetime.now()
 				if NOTIFIED_LOST:
 					slackman.back_to_life()
-					print("What was once lost is now found!")
+					logging.warning("What was once lost is now found!")
 					NOTIFIED_LOST=False
 				
 			checkLastSeen(lastSeen, LAST_SEEN_MAX)
@@ -115,7 +119,7 @@ def main():
 				pygame.mixer.quit() #prevents static noise
 			
 		except KeyboardInterrupt:
-			print("Bye!")
+			logging.info("Bye!")
 			GPIO.cleanup()
 			break
 	slackman.alive = False
@@ -126,8 +130,8 @@ if __name__ == "__main__":
 		main()
 	except:
 		errorMsg = traceback.format_exc()
-		print("A bad happened! [%s]" %(datetime.now().isoformat()))
-		print(errorMsg)
+		logging.error("A bad happened! [%s]" %(datetime.now().isoformat()))
+		logging.error(errorMsg)
 		if slackman:
 			slackman.error(errorMsg)
 

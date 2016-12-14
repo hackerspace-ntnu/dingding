@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+import logging
 from slackclient import SlackClient
 from slack_notify import Slack_notify
 
@@ -34,7 +34,7 @@ class Slackman(threading.Thread):
     
 
     def __init__(self):
-        print("Token: ",self.token)
+        logging.info("Token: ",self.token)
         threading.Thread.__init__(self)
 
     def run(self):
@@ -73,10 +73,10 @@ class Slackman(threading.Thread):
                     self.last_message_check=time.time()
                 time.sleep(1)
             except KeyboardInterrupt:
-                print("bye from slackman")
+                logging.info("bye from slackman")
                 self.alive = False
             except:
-                print("fucked up")
+                logging.error("fucked up")
                 self.error(traceback.format_exc())
                 time.sleep(5)    
     
@@ -88,7 +88,7 @@ class Slackman(threading.Thread):
 
     def error(self, err):
         self.errorMsg = err
-        print(err)
+        logging.info(err)
 
     def back_to_life(self):
         self.back_to_life_flag = True
@@ -97,7 +97,7 @@ class Slackman(threading.Thread):
         vakter=self.sn.get_users_to_notify()
         message=u"Noen har ringt på hos Hackerspace!"
         for vakt in vakter:
-            print(vakt)
+            logging.info(vakt)
             message+=" <@"+vakt+">"
         self.post_message(message)
 
@@ -110,14 +110,14 @@ class Slackman(threading.Thread):
     def print_users(self):
         for day in range(5):
             for ts in range(4):
-                print("\n"+str(self.weekdays2[day]) +" "+ str(ts*2+10) +"-"+str(ts*2+12) )
+                logging.info("\n"+str(self.weekdays2[day]) +" "+ str(ts*2+10) +"-"+str(ts*2+12) )
                 for usr in self.sn.get_users_to_notify_at(day,ts):
                     res=self.sc.api_call("users.info",user=usr)
                     if res["ok"]:
                         res=res["user"]
                     else:
                         continue
-                    print(res["real_name"]+"  ("+res["name"]+", "+usr+")")
+                    logging.info(res["real_name"]+"  ("+res["name"]+", "+usr+")")
 
     def post_message(self,message, emoji=":pekkaross:"):
         self.sc.api_call("chat.postMessage", channel="#ding-dong", text=message,username='Dingding', icon_emoji=emoji)
@@ -125,7 +125,7 @@ class Slackman(threading.Thread):
     def ugyldig_input(self,message,userid):
 
         response="<@"+userid+u">: Jeg forstår ikke \"" +message + "\"."
-        #print(response)
+        #logging.info(response)
         self.post_message(response)
 
     """
@@ -134,7 +134,7 @@ class Slackman(threading.Thread):
     def stopp(self,userid):
         self.sn.remove_user(userid)
         response="<@"+userid+u">: Du får ikke lenger varslinger."
-       # print(response)
+       # logging.info(response)
         self.post_message(response)
 
 
@@ -153,7 +153,7 @@ class Slackman(threading.Thread):
         last_msg_time=0
         if ret is not None and "messages" in ret:
             for a in reversed(ret["messages"]):
-                print(a)
+                logging.info(a)
                 last_msg_time=float(a["ts"])
                 if "user" in a:
                     userid= a["user"]
@@ -171,12 +171,12 @@ class Slackman(threading.Thread):
                     
 
                     elif len(data)>=2 and data[1].rstrip("?") in self.batteries:
-			if self.batteryLevels:
-				msg = "Batterinivå"
-				for key, value in self.batteryLevels.iteritems():
-					msg += "\n" + str(key) + ": " + str(value) + "%."
-			else:
-				msg = "Jeg har ikke motatt batteristatus enda."
+                        if self.batteryLevels:
+                            msg = "Batterinivå"
+                            for key, value in self.batteryLevels.iteritems():
+                                msg += "\n" + str(key) + ": " + str(value) + "%."
+                        else:
+                            msg = "Jeg har ikke motatt batteristatus enda."
                         self.post_message("<@"+userid+u">: " + msg, ":battery:")
 
                     elif len(data)==2 and (data[1]=="ding" or data[1] == "dong" or data[1] == "dang"):
