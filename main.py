@@ -39,7 +39,7 @@ def handlerButton():
 	time.sleep(5.0)
 			
 def handlerBattery(batteryLevel = -1, deviceID = "Ukjent dinger"):
-	logging.info("Battery for %s: " % deviceID, batteryLevel)
+	logging.debug("Battery for %s: " % deviceID, batteryLevel)
 	slackman.batteryLevels[deviceID] = batteryLevel
 
 def scanForBLEButton(scanner, timeout):
@@ -49,11 +49,11 @@ def scanForBLEButton(scanner, timeout):
 		entryIsButton = False
 		for (adtype, desc, value) in scanEntry.getScanData():
 			if int(adtype) == 9 and "HS_" in value: #Complete local name
-				logging.info(str(scanEntry.addr), str(scanEntry.connectable), str(scanEntry.rssi))
+				logging.debug(str(scanEntry.addr), str(scanEntry.connectable), str(scanEntry.rssi))
 				entryIsButton = True
 				foundButton = True
 		for (adtype, desc, value) in scanEntry.getScanData():
-			logging.debug("%s %s = %s" % (adtype, desc, value))
+			#logging.debug("%s %s = %s" % (adtype, desc, value))
 			if entryIsButton and int(adtype) == 22: #Service data
 				data = int(value[0:2], 16)
 				if data >= 128:
