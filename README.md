@@ -1,6 +1,6 @@
 # Dingding
 
-Bluetooth LE based doorbell using ARM Mbed and the Nordic Semiconductor nrf51 devkit. 
+Bluetooth LE based doorbell using ARM Mbed and the Nordic Semiconductor NRF51 devkit. 
 
 The python files run on a Raspberry-Pi with a speaker and a bluetooth module. The code in `mbed/` runs on the NRF51-DK.
 
