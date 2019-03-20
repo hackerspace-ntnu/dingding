@@ -14,87 +14,46 @@
  * limitations under the License.
  */
 
+
 #include "mbed.h"
 #include "ble/BLE.h"
-#include "ButtonService.h"
-#include "BatteryService.h"
-
+#include "Advertiser.h"
+ 
 const float ADVERTISING_TIME_BUTTON = 5.0; //How long it wil advertise after button press
 const float ADVERTISING_TIME_BATTERY = 10.0; //How long it will advertise battery
-const float BATTERY_ADVERTISING_INTERVAL = 60 * 30; //How often it will advertise battery status
-const bool DEBUG_LED = false;
+const float BATTERY_ADVERTISING_INTERVAL = 60.0*30.0; //How often it will advertise battery status
+const float MAX_BATTERY_VOLTAGE = 3.0; //Highest voltage from external supply
+const float CUTOFF_VOLTAGE = 1.8; //Lowest voltage the board will run at
+const bool DEBUG = false;
+const PinName BUZZER_PIN = P0_12;
+const PinName BUTTON_PIN = BUTTON1;
 
-DigitalOut  led1(LED1);
-PwmOut buzzer(P0_7);
-InterruptIn button(P0_9);
-Ticker advertisingTicker;
+DigitalOut led1(LED1);
+DigitalOut led2(LED2);
+DigitalOut redLed(P0_1);
+DigitalOut greenLed(P0_2);
+DigitalOut blueLed(P0_3);
+DigitalOut buzzer(BUZZER_PIN);
+
+InterruptIn button(BUTTON_PIN);
+Ticker batteryTicker, advertisingTicker;
 Timer buttonTimer;
+Advertiser advertiser("HS_B");
+static int beepValue = 10;
 
-/* Name and service UUID list */
-const static char     DEVICE_NAME[] = "H4ck3rsp4c3 Butt0n";
-static const uint16_t uuid16_list[] = {ButtonService::BUTTON_SERVICE_UUID, GattService::UUID_BATTERY_SERVICE};
-/* MAC adresses */
-const uint8_t addressButton[] = {0xAA,0xAA,0xAA,0xAA,0xAA,0x0E};
-const uint8_t addressBattery[] = {0xBB,0xBB,0xBB,0xBB,0xBB,0x0E};
-
-/* Button service */
+/* State machine */
 enum State{
-    SLEEPING = 0,
+    INIT = 0,
+    SLEEPING,
     ANNOUNCING_BUTTON_PRESS,
     ANNOUNCING_BATTERY_STATUS 
 };
-static uint8_t state = SLEEPING;
+static uint8_t state = INIT;
 static uint8_t targetState = SLEEPING;
-
-static ButtonService *buttonServicePtr;
-
-void beep()
-{
-    for (float i=2000.0; i<6000.0; i+=100) {
-        buzzer.period(1.0/i);
-        buzzer=0.5;
-        wait(0.02);
-    }
-    buzzer=0.0;
-}
-
-void debugBeep()
-{
-    for (float i=6000.0; i<2000.0; i-=100) {
-        buzzer.period(1.0/i);
-        buzzer=0.5;
-        wait(0.02);
-    }
-    buzzer=0.0;
-}
-
-void stopAdvertising(void)
-{
-    BLE &ble = BLE::Instance();
-    ble.gap().stopAdvertising();
-    led1 = true; //turn off if led was on
-    advertisingTicker.detach();
-}
 
 void stopAdvertisingCallback(void)
 {
-    stopAdvertising();
     targetState = SLEEPING;
-}
-
-void startAdvertising(const BLEProtocol::AddressBytes_t address, const float time)
-{
-    stopAdvertising();
-    wait(0.02);
-    BLE &ble = BLE::Instance();
-    ble.gap().setAddress(BLEProtocol::AddressType::PUBLIC, address);
-    advertisingTicker.attach(&stopAdvertisingCallback, time);
-    ble.gap().startAdvertising();
-    led1 = !DEBUG_LED; //turn on if DEBUG_LED set
-    if(address == addressButton)
-    {
-        beep(); //BUZz lightyear
-    }
 }
 
 void buttonPressedCallback(void)
@@ -108,24 +67,62 @@ void buttonPressedCallback(void)
 void buttonReleasedCallback(void)
 {
     buttonTimer.stop();
-    if(buttonTimer.read_ms() > 1)
+    if(buttonTimer.read_ms() >= 1)
     {
         targetState = ANNOUNCING_BUTTON_PRESS;
     }
 }
 
-//Called by timer every 30 mins
+//Called by ticker every 30 mins
 void periodicCallback(void)
 {
-    targetState = ANNOUNCING_BATTERY_STATUS;
+    if(state == SLEEPING || targetState == SLEEPING)
+    { 
+        targetState = ANNOUNCING_BATTERY_STATUS;
+    }
 }
 
-void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
+void beep()
 {
-    printf("So long sucker");
-    //targetState = SLEEPING;
+    beepValue = 1000;
+    //beepTicker.attach(beepCallback, 0.01);
+    while(beepValue > 0)
+    {
+        buzzer = !buzzer;
+        beepValue -= 1;
+        wait_us(beepValue);
+        buzzer = !buzzer;
+        wait_us(beepValue);
+     }
 }
 
+void my_analogin_init(void)
+{
+    NRF_ADC->ENABLE = ADC_ENABLE_ENABLE_Enabled;
+    NRF_ADC->CONFIG = (ADC_CONFIG_RES_10bit << ADC_CONFIG_RES_Pos) |
+                      (ADC_CONFIG_INPSEL_SupplyOneThirdPrescaling << ADC_CONFIG_INPSEL_Pos) |
+                      (ADC_CONFIG_REFSEL_VBG << ADC_CONFIG_REFSEL_Pos) |
+                      (ADC_CONFIG_PSEL_Disabled << ADC_CONFIG_PSEL_Pos) |
+                      (ADC_CONFIG_EXTREFSEL_None << ADC_CONFIG_EXTREFSEL_Pos);
+}
+ 
+uint16_t my_analogin_read_u16(void)
+{
+    NRF_ADC->CONFIG     &= ~ADC_CONFIG_PSEL_Msk;
+    NRF_ADC->CONFIG     |= ADC_CONFIG_PSEL_Disabled << ADC_CONFIG_PSEL_Pos;
+    NRF_ADC->TASKS_START = 1;
+    while (((NRF_ADC->BUSY & ADC_BUSY_BUSY_Msk) >> ADC_BUSY_BUSY_Pos) == ADC_BUSY_BUSY_Busy) {};
+    return (uint16_t)NRF_ADC->RESULT; // 10 bit
+}
+
+uint8_t readBatteryPercentage()
+{
+    float batteryVoltage;
+    batteryVoltage = (float)my_analogin_read_u16();    
+    batteryVoltage = ((batteryVoltage * 3.6) / 1024.0);
+    uint8_t batteryPercentage = ((batteryVoltage - CUTOFF_VOLTAGE) / (MAX_BATTERY_VOLTAGE-CUTOFF_VOLTAGE)) * 100;
+    return batteryPercentage;
+}
 
 /**
  * This function is called when the ble initialization process has failled
@@ -133,7 +130,7 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 void onBleInitError(BLE &ble, ble_error_t error)
 {
     /* Initialization error handling should go here */
-    printf("Fack");
+    //printf("Fack"); This uses many power
 }
 
 /**
@@ -154,40 +151,61 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     if(ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
         return;
     }
-
-    ble.gap().onDisconnection(disconnectionCallback);
-
-    /* Setup primary service */
-    buttonServicePtr = new ButtonService(ble, false /* initial value for button pressed */);
     
-     /* Setup auxiliary services. */
-    BatteryService battery(ble);
-
-    /* setup advertising */
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* 1000ms. */
-
+    /* get last three bytes of mac */
+    Gap::AddressType_t addressType;
+    Gap::Address_t     address;
+    uint8_t id[3];
+    ble.gap().getAddress(&addressType, address);
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        id[i] = address[i];
+    }
+    advertiser.setDeviceID(id, sizeof(id));
 }
 
 void transitionToState(const uint8_t& targetState)
 {
+    //Disable all leds (might be turned on by a transistion)
+    led1 = true; 
+    led2 = true;
+    redLed = false;
+    blueLed = false;
+    greenLed = false;
+    
     switch(targetState)
     {
         case SLEEPING:
-            buttonServicePtr->updateButtonState(false);
-            stopAdvertising();
+        {
+            advertiser.setButtonState(false);
+            advertiser.setBatteryPercentage(readBatteryPercentage());
+            advertisingTicker.detach();
             break;
+        }
         case ANNOUNCING_BUTTON_PRESS:
-            buttonServicePtr->updateButtonState(true);
-            startAdvertising(addressButton, ADVERTISING_TIME_BUTTON);
+        {
+            advertiser.setButtonState(true);
+            advertiser.setSequenceNumber(advertiser.getSequenceNumber() + 1);
+            advertiser.setBatteryPercentage(readBatteryPercentage());
+            advertiser.start(ADVERTISING_TIME_BUTTON);
+            advertisingTicker.detach();
+            advertisingTicker.attach(&stopAdvertisingCallback, ADVERTISING_TIME_BUTTON);
+            led1 = !DEBUG; //turn on if DEBUG set
+            blueLed = true;
+            beep(); //BuzZ lightyear
             break;
+        }
         case ANNOUNCING_BATTERY_STATUS:
-            buttonServicePtr->updateButtonState(false);
-            startAdvertising(addressBattery, ADVERTISING_TIME_BATTERY);
+        {
+            advertiser.setButtonState(false);
+            advertiser.setBatteryPercentage(readBatteryPercentage());
+            advertiser.setSequenceNumber(advertiser.getSequenceNumber() + 1);
+            advertiser.start(ADVERTISING_TIME_BATTERY);
+            advertisingTicker.detach();
+            advertisingTicker.attach(&stopAdvertisingCallback, ADVERTISING_TIME_BATTERY);
+            led2 = !DEBUG; //turn on if DEBUG set
             break;
+        }
         default:
             break;
     }
@@ -196,9 +214,8 @@ void transitionToState(const uint8_t& targetState)
 
 int main(void)
 {
-    led1 = 1;
-    Ticker ticker;
-    ticker.attach(periodicCallback, BATTERY_ADVERTISING_INTERVAL); //For advertising battery
+    my_analogin_init();
+    batteryTicker.attach(&periodicCallback, BATTERY_ADVERTISING_INTERVAL); //For advertising battery
     button.mode(PullUp);
     wait(0.01); //Wait for pullup
     button.fall(buttonPressedCallback);
@@ -217,6 +234,5 @@ int main(void)
             transitionToState(targetState);
         }
         ble.waitForEvent();
-        //debugBeep();
     }
 }
