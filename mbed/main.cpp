@@ -26,7 +26,7 @@ const float MAX_BATTERY_VOLTAGE = 3.0; //Highest voltage from external supply
 const float CUTOFF_VOLTAGE = 1.8; //Lowest voltage the board will run at
 const bool DEBUG = false;
 const PinName BUZZER_PIN = P0_12;
-const PinName BUTTON_PIN = BUTTON1;
+const PinName BUTTON_PIN = P0_9;
 
 DigitalOut led1(LED1);
 DigitalOut led2(LED2);
